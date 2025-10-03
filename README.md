@@ -1,0 +1,1 @@
+This project is a web app built with ASP.NET Core MVC for managing events (called Shows). Users can add, edit, delete, and view shows with details like title, description, date, time, location, category, and owner. The app uses Entity Framework Core with a SQL Server LocalDB database, Bootstrap for styling, and includes basic branding with a custom logo.
