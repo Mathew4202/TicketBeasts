@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using TicketBeasts.Data;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
@@ -33,11 +33,13 @@ builder.Services.AddDbContext<AppDbContext>(options =>
         sql => sql.EnableRetryOnFailure()
     ));
 
-// ? Blob client registration MUST be before Build()
+// ✅ Blob client registration MUST be before Build()
+
 var blobConn = builder.Configuration["Blob:ConnectionString"];
-if (string.IsNullOrWhiteSpace(blobConn))
-    throw new InvalidOperationException("Missing Blob:ConnectionString in configuration.");
-builder.Services.AddSingleton(new BlobServiceClient(blobConn));
+if (!string.IsNullOrWhiteSpace(blobConn))
+{
+    builder.Services.AddSingleton(new BlobServiceClient(blobConn));
+}
 
 var app = builder.Build();
 
@@ -49,7 +51,7 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-// If you�re using the new static asset helpers keep MapStaticAssets/WithStaticAssets.
+// If you’re using the new static asset helpers keep MapStaticAssets/WithStaticAssets.
 // Otherwise, use:
 app.UseStaticFiles();
 
