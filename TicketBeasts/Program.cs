@@ -3,6 +3,7 @@ using TicketBeasts.Data;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.Authorization;
+using Azure.Storage.Blobs;
 
 var builder = WebApplication.CreateBuilder(args);
 

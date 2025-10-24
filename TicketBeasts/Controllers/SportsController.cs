@@ -1,14 +1,20 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Configuration;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Azure.Storage.Blobs;
+using Azure.Storage.Blobs.Models;
+using Microsoft.AspNetCore.Hosting;  
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using TicketBeasts.Data;
 using TicketBeasts.Models;
-using Microsoft.AspNetCore.Hosting;  
-using System.IO;
+
+
 
 namespace TicketBeasts.Controllers
 {
@@ -16,12 +22,15 @@ namespace TicketBeasts.Controllers
     {
         private readonly AppDbContext _context;
         private readonly IWebHostEnvironment _env;
+        private readonly BlobServiceClient _blob;
+        private readonly IConfiguration _configuration;
 
-
-        public SportsController(AppDbContext context, IWebHostEnvironment env)
+        public SportsController(AppDbContext context, IWebHostEnvironment env, BlobServiceClient blob, IConfiguration configuration)
         {
             _context = context;
             _env = env;
+            _blob = blob;
+            _configuration = configuration;
         }
 
         public async Task<IActionResult> Index()
@@ -68,17 +77,19 @@ namespace TicketBeasts.Controllers
             {
                 if (imageFile != null && imageFile.Length > 0)
                 {
-                    var uploadsRoot = Path.Combine(_env.WebRootPath, "uploads");
-                    Directory.CreateDirectory(uploadsRoot);
+                    var container = _blob.GetBlobContainerClient(
+                        _configuration["Blob:Container"] ?? "uploads");
+
+                    await container.CreateIfNotExistsAsync(PublicAccessType.Blob);
 
                     var ext = Path.GetExtension(imageFile.FileName);
-                    var fileName = $"{Guid.NewGuid()}{ext}";
-                    var fullPath = Path.Combine(uploadsRoot, fileName);
+                    var blobName = $"{Guid.NewGuid()}{ext}";
+                    var blob = container.GetBlobClient(blobName);
 
-                    using var stream = System.IO.File.Create(fullPath);
-                    await imageFile.CopyToAsync(stream);
+                    var headers = new BlobHttpHeaders { ContentType = imageFile.ContentType };
+                    await blob.UploadAsync(imageFile.OpenReadStream(), new BlobUploadOptions { HttpHeaders = headers });
 
-                    sport.ImagePath = $"/uploads/{fileName}";
+                    sport.ImagePath = blob.Uri.ToString(); // store full https URL
                 }
 
                 _context.Add(sport);
@@ -90,6 +101,7 @@ namespace TicketBeasts.Controllers
             ViewData["OwnerId"] = new SelectList(_context.Owners, "Id", "Name", sport.OwnerId);
             return View(sport);
         }
+
 
 
         // GET: Events/Edit/5
