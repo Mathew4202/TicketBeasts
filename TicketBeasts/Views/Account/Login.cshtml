@@ -1,0 +1,29 @@
+﻿@{
+    ViewData["Title"] = "Login";
+    var returnUrl = (string?)ViewData["ReturnUrl"] ?? Url.Action("Index", "Sports"); // <-- Sports
+}
+<input type="hidden" name="returnUrl" value="@returnUrl" />
+
+<div class="container" style="max-width:480px;">
+    <h1 class="h4 mb-3">Login</h1>
+    <form asp-action="Login" method="post">
+        <input type="hidden" name="returnUrl" value="@returnUrl" />
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+        <div class="mb-3">
+            <label class="form-label">Username</label>
+            <input name="username" class="form-control" autocomplete="username" required />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Password</label>
+            <input name="password" type="password" class="form-control" autocomplete="current-password" required />
+        </div>
+
+        <button type="submit" class="btn btn-primary">Sign in</button>
+    </form>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

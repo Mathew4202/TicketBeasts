@@ -7,16 +7,21 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using TicketBeasts.Data;
 using TicketBeasts.Models;
+using Microsoft.AspNetCore.Hosting;  
+using System.IO;
 
 namespace TicketBeasts.Controllers
 {
     public class SportsController : Controller
     {
         private readonly AppDbContext _context;
+        private readonly IWebHostEnvironment _env;
 
-        public SportsController(AppDbContext context)
+
+        public SportsController(AppDbContext context, IWebHostEnvironment env)
         {
             _context = context;
+            _env = env;
         }
 
         public async Task<IActionResult> Index()
@@ -57,76 +62,96 @@ namespace TicketBeasts.Controllers
         // POST: Events/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Id,Title,Description,EventDateTime,Location,CategoryId,OwnerId,CreatedAt")] Sport @event)
+        public async Task<IActionResult> Create([Bind("Id,Title,Description,EventDateTime,Location,CategoryId,OwnerId,CreatedAt,ImagePath")] Sport sport, IFormFile? imageFile)
         {
             if (ModelState.IsValid)
             {
-                // ensure CreatedAt is set server-side
-                @event.CreatedAt = DateTime.Now;
+                if (imageFile != null && imageFile.Length > 0)
+                {
+                    var uploadsRoot = Path.Combine(_env.WebRootPath, "uploads");
+                    Directory.CreateDirectory(uploadsRoot);
 
-                _context.Add(@event);
+                    var ext = Path.GetExtension(imageFile.FileName);
+                    var fileName = $"{Guid.NewGuid()}{ext}";
+                    var fullPath = Path.Combine(uploadsRoot, fileName);
+
+                    using var stream = System.IO.File.Create(fullPath);
+                    await imageFile.CopyToAsync(stream);
+
+                    sport.ImagePath = $"/uploads/{fileName}";
+                }
+
+                _context.Add(sport);
                 await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["CategoryId"] = new SelectList(_context.Categories, "Id", "Name", @event.CategoryId);
-            ViewData["OwnerId"] = new SelectList(_context.Owners, "Id", "Name", @event.OwnerId);
-            return View(@event);
+
+            ViewData["CategoryId"] = new SelectList(_context.Categories, "Id", "Name", sport.CategoryId);
+            ViewData["OwnerId"] = new SelectList(_context.Owners, "Id", "Name", sport.OwnerId);
+            return View(sport);
         }
+
 
         // GET: Events/Edit/5
         public async Task<IActionResult> Edit(int? id)
         {
-            if (id == null)
-            {
-                return NotFound();
-            }
+            if (id == null) return NotFound();
 
-            var @event = await _context.Sports.FindAsync(id);
-            if (@event == null)
-            {
-                return NotFound();
-            }
-            ViewData["CategoryId"] = new SelectList(_context.Categories, "Id", "Name", @event.CategoryId);
-            ViewData["OwnerId"] = new SelectList(_context.Owners, "Id", "Name", @event.OwnerId);
-            return View(@event);
+            var sport = await _context.Sports.FindAsync(id);
+            if (sport == null) return NotFound();
+
+            ViewData["CategoryId"] = new SelectList(_context.Categories, "Id", "Name", sport.CategoryId);
+            ViewData["OwnerId"] = new SelectList(_context.Owners, "Id", "Name", sport.OwnerId);
+            return View(sport);
         }
+
 
         // POST: Events/Edit/5
         // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,Title,Description,EventDateTime,Location,CategoryId,OwnerId,CreatedAt")] Sport @event)
+        public async Task<IActionResult> Edit(int id, [Bind("Id,Title,Description,EventDateTime,Location,CategoryId,OwnerId,CreatedAt,ImagePath")] Sport sport, IFormFile? imageFile)
         {
-            if (id != @event.Id)
-            {
-                return NotFound();
-            }
+            if (id != sport.Id) return NotFound();
 
             if (ModelState.IsValid)
             {
                 try
                 {
-                    _context.Update(@event);
+                    if (imageFile != null && imageFile.Length > 0)
+                    {
+                        var uploadsRoot = Path.Combine(_env.WebRootPath, "uploads");
+                        Directory.CreateDirectory(uploadsRoot);
+
+                        var ext = Path.GetExtension(imageFile.FileName);
+                        var fileName = $"{Guid.NewGuid()}{ext}";
+                        var fullPath = Path.Combine(uploadsRoot, fileName);
+
+                        using var stream = System.IO.File.Create(fullPath);
+                        await imageFile.CopyToAsync(stream);
+
+                        // replace old path with new
+                        sport.ImagePath = $"/uploads/{fileName}";
+                    }
+
+                    _context.Update(sport);
                     await _context.SaveChangesAsync();
                 }
                 catch (DbUpdateConcurrencyException)
                 {
-                    if (!EventExists(@event.Id))
-                    {
+                    if (!_context.Sports.Any(e => e.Id == sport.Id))
                         return NotFound();
-                    }
                     else
-                    {
                         throw;
-                    }
                 }
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["CategoryId"] = new SelectList(_context.Categories, "Id", "Name", @event.CategoryId);
-            ViewData["OwnerId"] = new SelectList(_context.Owners, "Id", "Name", @event.OwnerId);
-            return View(@event);
+
+            ViewData["CategoryId"] = new SelectList(_context.Categories, "Id", "Name", sport.CategoryId);
+            ViewData["OwnerId"] = new SelectList(_context.Owners, "Id", "Name", sport.OwnerId);
+            return View(sport);
         }
+
 
         // GET: Events/Delete/5
         public async Task<IActionResult> Delete(int? id)

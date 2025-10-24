@@ -25,14 +25,29 @@
                 <div class="collapse navbar-collapse" id="mainNav">
                     <ul class="navbar-nav ms-auto">
                         <li class="nav-item ms-lg-2">
-                            <a class="nav-link" asp-controller="Sports" asp-action="Create">Add a Sport Game</a>
+                            <a class="nav-link" asp-controller="Sports" asp-action="Index">Home</a>
                         </li>
                         <li class="nav-item ms-lg-2">
-                            <a class="nav-link" asp-controller="Owners" asp-action="Create">Add an Owner</a>
+                            <a class="nav-link" asp-controller="Categories" asp-action="Index">Categories</a>
                         </li>
                         <li class="nav-item ms-lg-2">
-                            <a class="nav-link" asp-controller="Categories" asp-action="Create">Add Category</a>
+                            <a class="nav-link" asp-controller="Owners" asp-action="Index">Owners</a>
                         </li>
+                        @if (User.Identity?.IsAuthenticated ?? false)
+                        {
+                            <li class="nav-item">
+                                <form asp-controller="Account" asp-action="LogoutConfirmed" method="post" class="d-inline">
+                                    <button type="submit" class="btn btn-link nav-link p-0">Logout (@User.Identity!.Name)</button>
+                                </form>
+                            </li>
+                        }
+                        else
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link" asp-controller="Account" asp-action="Login">Login</a>
+                            </li>
+                        }
+
                     </ul>
                 </div>
             </div>
