@@ -63,5 +63,15 @@ using (var scope = app.Services.CreateScope())
 }
 app.MapGet("/health", () => "OK");
 
+// Blob Storage
+var blobConn = builder.Configuration["Blob:ConnectionString"];
+if (string.IsNullOrWhiteSpace(blobConn))
+{
+    throw new InvalidOperationException("Missing Blob:ConnectionString in configuration.");
+}
+builder.Services.AddSingleton<BlobServiceClient>(_ => new BlobServiceClient(blobConn));
+
+app = builder.Build();
+
 
 app.Run();
