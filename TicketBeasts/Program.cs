@@ -7,7 +7,7 @@ using Azure.Storage.Blobs;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 1) MVC + "require login everywhere" (global AuthorizeFilter)
+// MVC + global authorize
 builder.Services.AddControllersWithViews(options =>
 {
     var policy = new AuthorizationPolicyBuilder()
@@ -16,23 +16,32 @@ builder.Services.AddControllersWithViews(options =>
     options.Filters.Add(new AuthorizeFilter(policy));
 });
 
-// 2) Cookie authentication (sets redirect to Login when not signed in)
+// Cookie auth
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
     {
-        options.LoginPath = "/Account/Login";      // redirect here if not logged in
+        options.LoginPath = "/Account/Login";
         options.LogoutPath = "/Account/Logout";
         options.AccessDeniedPath = "/Account/Login";
         options.SlidingExpiration = true;
     });
 
-// 3) EF Core
+// EF Core with retries (optional but good for Azure SQL)
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseSqlServer(
+        builder.Configuration.GetConnectionString("DefaultConnection"),
+        sql => sql.EnableRetryOnFailure()
+    ));
+
+// ? Blob client registration MUST be before Build()
+var blobConn = builder.Configuration["Blob:ConnectionString"];
+if (string.IsNullOrWhiteSpace(blobConn))
+    throw new InvalidOperationException("Missing Blob:ConnectionString in configuration.");
+builder.Services.AddSingleton(new BlobServiceClient(blobConn));
 
 var app = builder.Build();
 
-// --- pipeline ---
+// pipeline
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
@@ -40,38 +49,23 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
-// If your project uses the new static asset helpers, keep these two lines:
-app.MapStaticAssets();  // maps wwwroot (or static assets) before routing
+// If you’re using the new static asset helpers keep MapStaticAssets/WithStaticAssets.
+// Otherwise, use:
+app.UseStaticFiles();
 
 app.UseRouting();
-
-// 4) Auth order matters: UseAuthentication BEFORE UseAuthorization
 app.UseAuthentication();
 app.UseAuthorization();
 
-// Default route — change if your home is different
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=Sports}/{action=Index}/{id?}")
-    .WithStaticAssets();
+    pattern: "{controller=Sports}/{action=Index}/{id?}");
 
+// auto-migrate DB on startup
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    db.Database.Migrate(); // auto-create/update tables on startup
+    db.Database.Migrate();
 }
-app.MapGet("/health", () => "OK");
-
-// Blob Storage
-var blobConn = builder.Configuration["Blob:ConnectionString"];
-if (string.IsNullOrWhiteSpace(blobConn))
-{
-    throw new InvalidOperationException("Missing Blob:ConnectionString in configuration.");
-}
-builder.Services.AddSingleton<BlobServiceClient>(_ => new BlobServiceClient(blobConn));
-
-app = builder.Build();
-
 
 app.Run();

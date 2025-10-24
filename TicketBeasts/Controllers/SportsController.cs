@@ -77,9 +77,7 @@ namespace TicketBeasts.Controllers
             {
                 if (imageFile != null && imageFile.Length > 0)
                 {
-                    var container = _blob.GetBlobContainerClient(
-                        _configuration["Blob:Container"] ?? "uploads");
-
+                    var container = _blob.GetBlobContainerClient(_configuration["Blob:Container"] ?? "uploads");
                     await container.CreateIfNotExistsAsync(PublicAccessType.Blob);
 
                     var ext = Path.GetExtension(imageFile.FileName);
@@ -89,8 +87,10 @@ namespace TicketBeasts.Controllers
                     var headers = new BlobHttpHeaders { ContentType = imageFile.ContentType };
                     await blob.UploadAsync(imageFile.OpenReadStream(), new BlobUploadOptions { HttpHeaders = headers });
 
-                    sport.ImagePath = blob.Uri.ToString(); // store full https URL
+                    // optional: delete old blob here if you want
+                    sport.ImagePath = blob.Uri.ToString();  // store full https URL
                 }
+
 
                 _context.Add(sport);
                 await _context.SaveChangesAsync();
