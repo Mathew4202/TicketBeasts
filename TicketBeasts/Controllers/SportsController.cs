@@ -33,13 +33,20 @@ namespace TicketBeasts.Controllers
             _configuration = configuration;
         }
 
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(string search)
         {
-            var appDbContext = _context.Sports.Include(s => s.Category).Include(s => s.Owner);
-            return View(await appDbContext.ToListAsync());
+            var sports = from s in _context.Sports.Include(c => c.Category).Include(o => o.Owner)
+                         select s;
+
+            if (!string.IsNullOrEmpty(search))
+            {
+                sports = sports.Where(s => s.Title.Contains(search) || s.Location.Contains(search));
+            }
+
+            return View(await sports.ToListAsync());
         }
 
-      
+
         public async Task<IActionResult> Details(int? id)
         {
             if (id == null)
