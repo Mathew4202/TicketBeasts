@@ -57,6 +57,39 @@
             @Html.DisplayFor(model => model.CreatedAt)
         </dd>
     </dl>
+        <h4>Purchases</h4>
+
+        @if (Model.Purchases == null || !Model.Purchases.Any())
+        {
+            <p>No purchases yet for this event.</p>
+        }
+        else
+        {
+            <table class="table table-sm table-striped">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Customer</th>
+                        <th>Email</th>
+                        <th>Quantity</th>
+                        <th>Card last 4</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var p in Model.Purchases.OrderByDescending(p => p.CreatedAt))
+                    {
+                        <tr>
+                            <td>@p.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</td>
+                            <td>@p.CustomerName</td>
+                            <td>@p.Email</td>
+                            <td>@p.Quantity</td>
+                            <td>@p.CreditCardLast4</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+
 </div>
 <div>
     <a asp-action="Edit" asp-route-id="@Model?.Id">Edit</a> |

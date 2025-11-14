@@ -14,10 +14,18 @@ namespace TicketBeasts.Data
         public DbSet<Sport> Sports { get; set; }
         public DbSet<Category> Categories { get; set; }
         public DbSet<Owner> Owners { get; set; }
+        public DbSet<Purchase> Purchases { get; set; }
+
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+
+            modelBuilder.Entity<Purchase>()
+                .HasOne(p => p.Event)
+                .WithMany(s => s.Purchases)
+                .HasForeignKey(p => p.EventId);
         }
+
     }
 }

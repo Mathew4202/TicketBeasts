@@ -37,6 +37,9 @@ namespace TicketBeasts.Models
         [Display(Name = "Created At")]
         public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
 
+        public ICollection<Purchase> Purchases { get; set; } = new List<Purchase>();
+
+
         [StringLength(300)]
         [Display(Name = "Image")]
         public string? ImagePath { get; set; }   // e.g. "/uploads/abcd1234.jpg"
